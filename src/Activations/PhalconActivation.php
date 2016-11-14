@@ -84,6 +84,16 @@ class PhalconActivation extends Model implements ActivationInterface
     public $updated_at;
 
     /**
+     * Return the random string used as activation code.
+     *
+     * @return string
+     */
+    public function getCode()
+    {
+        return $this->code;
+    }
+
+    /**
      * Initialize method for model.
      */
     public function initialize()
