@@ -13,28 +13,29 @@
  * @package    Sentinel
  * @version    2.0.13
  * @author     Cartalyst LLC
+ * @author     Talal Alenizi <talal.alenizi@gmail.com>
  * @license    BSD License (3-clause)
  * @copyright  (c) 2011-2016, Cartalyst LLC
  * @link       http://cartalyst.com
  */
 
-namespace Cartalyst\Sentinel\Native;
+namespace Cartalyst\Sentinel\Phalcon;
 
-use Cartalyst\Sentinel\Activations\IlluminateActivationRepository;
+use Cartalyst\Sentinel\Activations\PhalconActivationRepository;
 use Cartalyst\Sentinel\Checkpoints\ActivationCheckpoint;
 use Cartalyst\Sentinel\Checkpoints\ThrottleCheckpoint;
-use Cartalyst\Sentinel\Cookies\NativeCookie;
-use Cartalyst\Sentinel\Hashing\NativeHasher;
-use Cartalyst\Sentinel\Persistences\IlluminatePersistenceRepository;
-use Cartalyst\Sentinel\Reminders\IlluminateReminderRepository;
-use Cartalyst\Sentinel\Roles\IlluminateRoleRepository;
+use Cartalyst\Sentinel\Cookies\PhalconCookie;
+use Cartalyst\Sentinel\Hashing\PhalconHasher;
+use Cartalyst\Sentinel\Persistences\PhalconPersistenceRepository;
+use Cartalyst\Sentinel\Reminders\PhalconReminderRepository;
+use Cartalyst\Sentinel\Roles\PhalconRoleRepository;
 use Cartalyst\Sentinel\Sentinel;
-use Cartalyst\Sentinel\Sessions\NativeSession;
-use Cartalyst\Sentinel\Throttling\IlluminateThrottleRepository;
-use Cartalyst\Sentinel\Users\IlluminateUserRepository;
+use Cartalyst\Sentinel\Sessions\PhalconSession;
+use Cartalyst\Sentinel\Throttling\PhalconThrottleRepository;
+use Cartalyst\Sentinel\Users\PhalconUserRepository;
 use Illuminate\Events\Dispatcher;
 use InvalidArgumentException;
-use Symfony\Component\HttpFoundation\Request;
+use \Phalcon\Http\Request;
 
 class SentinelBootstrapper
 {
@@ -112,7 +113,7 @@ class SentinelBootstrapper
     /**
      * Creates a persistences repository.
      *
-     * @return \Cartalyst\Sentinel\Persistences\IlluminatePersistenceRepository
+     * @return \Cartalyst\Sentinel\Persistences\PhalconPersistenceRepository
      */
     protected function createPersistence()
     {
@@ -122,35 +123,37 @@ class SentinelBootstrapper
 
         $model = $this->config['persistences']['model'];
 
-        $single = $config['persistences']['single'];
+        $single = $this->config['persistences']['single'];
 
-        return new IlluminatePersistenceRepository($session, $cookie, $model, $single);
+        return new PhalconPersistenceRepository($session, $cookie, $model, $single);
     }
 
     /**
      * Creates a session.
      *
-     * @return \Cartalyst\Sentinel\Sessions\NativeSession
+     * @return \Cartalyst\Sentinel\Sessions\PhalconSession
      */
     protected function createSession()
     {
-        return new NativeSession($this->config['session']);
+        $service = $this->config['PhalconServices']['SessionService'];
+        return new PhalconSession($this->config['session'], $service);
     }
 
     /**
      * Creates a cookie.
      *
-     * @return \Cartalyst\Sentinel\Cookies\NativeCookie
+     * @return \Cartalyst\Sentinel\Cookies\PhalconCookie
      */
     protected function createCookie()
     {
-        return new NativeCookie($this->config['cookie']);
+        $service = $this->config['PhalconServices']['CookiesService'];
+        return new PhalconCookie($this->config['cookie'], $service);
     }
 
     /**
      * Creates a user repository.
      *
-     * @return \Cartalyst\Sentinel\Users\IlluminateUserRepository
+     * @return \Cartalyst\Sentinel\Users\PhalconUserRepository
      */
     protected function createUsers()
     {
@@ -160,33 +163,41 @@ class SentinelBootstrapper
 
         $roles = $this->config['roles']['model'];
 
+        $roleUsers = $this->config['roleUsers']['model'];
+
         $persistences = $this->config['persistences']['model'];
 
-        if (class_exists($roles) && method_exists($roles, 'setUsersModel')) {
-            forward_static_call_array([$roles, 'setUsersModel'], [$model]);
+        if (class_exists($roles)) {
+            if (method_exists($roles, 'setUsersModel')) {
+                forward_static_call_array([$roles, 'setUsersModel'], [$model]);
+            }
+            if (method_exists($roles, 'setRoleUsersModel')) {
+                forward_static_call_array([$roles, 'setRoleUsersModel'], [$roleUsers]);
+            }
         }
 
         if (class_exists($persistences) && method_exists($persistences, 'setUsersModel')) {
             forward_static_call_array([$persistences, 'setUsersModel'], [$model]);
         }
 
-        return new IlluminateUserRepository($hasher, $this->getEventDispatcher(), $model);
+        return new PhalconUserRepository($hasher, $this->getEventDispatcher(), $model);
     }
 
     /**
      * Creates a hasher.
      *
-     * @return \Cartalyst\Sentinel\Hashing\NativeHasher
+     * @return \Cartalyst\Sentinel\Hashing\PhalconHasher
      */
     protected function createHasher()
     {
-        return new NativeHasher;
+        $service = $this->config['PhalconServices']['SecurityService'];
+        return new PhalconHasher($service);
     }
 
     /**
      * Creates a role repository.
      *
-     * @return \Cartalyst\Sentinel\Roles\IlluminateRoleRepository
+     * @return \Cartalyst\Sentinel\Roles\PhalconRoleRepository
      */
     protected function createRoles()
     {
@@ -194,17 +205,24 @@ class SentinelBootstrapper
 
         $users = $this->config['users']['model'];
 
-        if (class_exists($users) && method_exists($users, 'setRolesModel')) {
-            forward_static_call_array([$users, 'setRolesModel'], [$model]);
+        $roleUsers = $this->config['roleUsers']['model'];
+
+        if (class_exists($users)) {
+            if (method_exists($users, 'setRolesModel')) {
+                forward_static_call_array([$users, 'setRolesModel'], [$model]);
+            }
+            if (method_exists($users, 'setRoleUsersModel')) {
+                forward_static_call_array([$users, 'setRoleUsersModel'], [$roleUsers]);
+            }
         }
 
-        return new IlluminateRoleRepository($model);
+        return new PhalconRoleRepository($model);
     }
 
     /**
      * Creates an activation repository.
      *
-     * @return \Cartalyst\Sentinel\Activations\IlluminateActivationRepository
+     * @return \Cartalyst\Sentinel\Activations\PhalconActivationRepository
      */
     protected function createActivations()
     {
@@ -212,7 +230,7 @@ class SentinelBootstrapper
 
         $expires = $this->config['activations']['expires'];
 
-        return new IlluminateActivationRepository($model, $expires);
+        return new PhalconActivationRepository($model, $expires);
     }
 
     /**
@@ -222,18 +240,17 @@ class SentinelBootstrapper
      */
     protected function getIpAddress()
     {
-        $request = Request::createFromGlobals();
 
-        return $request->getClientIp();
+        return (new Request)->getClientAddress();
     }
 
     /**
      * Create an activation checkpoint.
      *
-     * @param  \Cartalyst\Sentinel\Activations\IlluminateActivationRepository  $activations
+     * @param  \Cartalyst\Sentinel\Activations\PhalconActivationRepository  $activations
      * @return \Cartalyst\Sentinel\Checkpoints\ActivationCheckpoint
      */
-    protected function createActivationCheckpoint(IlluminateActivationRepository $activations)
+    protected function createActivationCheckpoint(PhalconActivationRepository $activations)
     {
         return new ActivationCheckpoint($activations);
     }
@@ -241,13 +258,13 @@ class SentinelBootstrapper
     /**
      * Create activation and throttling checkpoints.
      *
-     * @param  \Cartalyst\Sentinel\Activations\IlluminateActivationRepository  $activations
-     * @param  \Cartalyst\Sentinel\Throttling\IlluminateThrottleRepository  $throttle
+     * @param  \Cartalyst\Sentinel\Activations\PhalconActivationRepository  $activations
+     * @param  \Cartalyst\Sentinel\Throttling\PhalconThrottleRepository  $throttle
      * @param  string  $ipAddress
      * @return array
      * @throws \InvalidArgumentException
      */
-    protected function createCheckpoints(IlluminateActivationRepository $activations, IlluminateThrottleRepository $throttle, $ipAddress)
+    protected function createCheckpoints(PhalconActivationRepository $activations, PhalconThrottleRepository $throttle, $ipAddress)
     {
         $activeCheckpoints = $this->config['checkpoints'];
 
@@ -271,11 +288,11 @@ class SentinelBootstrapper
     /**
      * Create a throttle checkpoint.
      *
-     * @param  \Cartalyst\Sentinel\Throttling\IlluminateThrottleRepository  $throttle
+     * @param  \Cartalyst\Sentinel\Throttling\PhalconThrottleRepository  $throttle
      * @param  string  $ipAddress
      * @return \Cartalyst\Sentinel\Checkpoints\ThrottleCheckpoint
      */
-    protected function createThrottleCheckpoint(IlluminateThrottleRepository $throtte, $ipAddress)
+    protected function createThrottleCheckpoint(PhalconThrottleRepository $throtte, $ipAddress)
     {
         return new ThrottleCheckpoint($throtte, $ipAddress);
     }
@@ -283,7 +300,7 @@ class SentinelBootstrapper
     /**
      * Create a throttling repository.
      *
-     * @return \Cartalyst\Sentinel\Throttling\IlluminateThrottleRepository
+     * @return \Cartalyst\Sentinel\Throttling\PhalconThrottleRepository
      */
     protected function createThrottling()
     {
@@ -295,7 +312,7 @@ class SentinelBootstrapper
             ${"{$type}Thresholds"} = $this->config['throttling'][$type]['thresholds'];
         }
 
-        return new IlluminateThrottleRepository(
+        return new PhalconThrottleRepository(
             $model,
             $globalInterval,
             $globalThresholds,
@@ -323,15 +340,15 @@ class SentinelBootstrapper
     /**
      * Create a reminder repository.
      *
-     * @param  \Cartalyst\Sentinel\Users\IlluminateUserRepository  $users
-     * @return \Cartalyst\Sentinel\Reminders\IlluminateReminderRepository
+     * @param  \Cartalyst\Sentinel\Users\PhalconUserRepository  $users
+     * @return \Cartalyst\Sentinel\Reminders\PhalconReminderRepository
      */
-    protected function createReminders(IlluminateUserRepository $users)
+    protected function createReminders(PhalconUserRepository $users)
     {
         $model = $this->config['reminders']['model'];
 
         $expires = $this->config['reminders']['expires'];
 
-        return new IlluminateReminderRepository($users, $model, $expires);
+        return new PhalconReminderRepository($users, $model, $expires);
     }
 }
