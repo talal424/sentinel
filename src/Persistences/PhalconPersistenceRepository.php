@@ -154,7 +154,7 @@ class PhalconPersistenceRepository implements PersistenceRepositoryInterface
 
         $persistence = $this->createModel();
 
-        $persistence->user_id = (int) $persistable->getId();
+        $persistence->user_id = (int) $persistable->id;
 
         $persistence->code = (string) $code;
 
