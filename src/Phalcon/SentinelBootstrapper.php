@@ -29,11 +29,11 @@ use Cartalyst\Sentinel\Hashing\PhalconHasher;
 use Cartalyst\Sentinel\Persistences\PhalconPersistenceRepository;
 use Cartalyst\Sentinel\Reminders\PhalconReminderRepository;
 use Cartalyst\Sentinel\Roles\PhalconRoleRepository;
-use Cartalyst\Sentinel\Sentinel;
+use Cartalyst\Sentinel\PhalconSentinel;
 use Cartalyst\Sentinel\Sessions\PhalconSession;
 use Cartalyst\Sentinel\Throttling\PhalconThrottleRepository;
 use Cartalyst\Sentinel\Users\PhalconUserRepository;
-use Illuminate\Events\Dispatcher;
+use \Phalcon\Events\Manager as Dispatcher;
 use InvalidArgumentException;
 use \Phalcon\Http\Request;
 
@@ -47,9 +47,9 @@ class SentinelBootstrapper
     protected $config;
 
     /**
-     * The event dispatcher.
+     * The Phalcon Events Manager
      *
-     * @var \Illuminate\Events\Dispatcher
+     * @var \Phalcon\Events\Manager
      */
     protected $dispatcher;
 
@@ -81,7 +81,7 @@ class SentinelBootstrapper
         $activations = $this->createActivations();
         $dispatcher  = $this->getEventDispatcher();
 
-        $sentinel = new Sentinel(
+        $sentinel = new PhalconSentinel(
             $persistence,
             $users,
             $roles,
@@ -324,9 +324,9 @@ class SentinelBootstrapper
     }
 
     /**
-     * Returns the event dispatcher.
+     * Returns the Phalcon Events Manager
      *
-     * @return \Illuminate\Events\Dispatcher
+     * @return \Phalcon\Events\Manager
      */
     protected function getEventDispatcher()
     {

@@ -20,18 +20,17 @@
  */
 
 namespace Cartalyst\Sentinel\Users;
-
 use Carbon\Carbon;
 use Cartalyst\Sentinel\Hashing\HasherInterface;
-use Cartalyst\Support\Traits\EventTrait;
+use Cartalyst\Sentinel\Traits\PhalconEventTrait;
 use Cartalyst\Support\Traits\RepositoryTrait;
 use Closure;
-use Illuminate\Events\Dispatcher;
+use \Phalcon\Events\Manager as Dispatcher;
 use InvalidArgumentException;
 
 class PhalconUserRepository implements UserRepositoryInterface
 {
-    use EventTrait, RepositoryTrait;
+    use PhalconEventTrait, RepositoryTrait;
 
     /**
      * The hasher instance.
