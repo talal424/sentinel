@@ -1,4 +1,4 @@
-# Cartalyst/Sentinel Phalcon integration
+# Cartalyst/Sentinel (v2.0.13) Phalcon integration
 
 this is a [forked project](https://github.com/talal424/sentinel) that i made a phalcon intergration to it
 
