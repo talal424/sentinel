@@ -14,10 +14,10 @@ you don't need to require these packages on composer.json:
 
 * illuminate/database
 * symfony/http-foundation
-
-but you need these packages:
-
 * illuminate/events
+
+but you need this package:
+
 * nesbot/carbon
 
 ```php
