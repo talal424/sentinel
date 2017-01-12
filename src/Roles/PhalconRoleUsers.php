@@ -116,6 +116,28 @@ class PhalconRoleUsers extends Model
     {
         return parent::findFirst($parameters);
     }
+    
+    /**
+     * Set role id
+     * 
+     * @param int $key
+     * @return \Cartalyst\Sentinel\Roles\PhalconRoleUsers
+     */
+    public function setRoleId($key)
+    {
+        $this->role_id = $key;
+        return $this;
+    }
+    
+    /**
+     * Get role id
+     * 
+     * @return number
+     */
+    public function getRoleId()
+    {
+        return $this->role_id;
+    }
 
     /**
      * Assign a user to a role.
